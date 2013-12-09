@@ -86,6 +86,20 @@ abstract class Env
     }
 
     /**
+     * Définition d'une session
+     *
+     * @param mixte $attr Liste des options
+     * @param $value
+     * @return mixte
+     */
+    public static function sessionSet($attr, $value = false)
+    {
+        \PHPTools\Session::write(function() use($attr, $value) {
+                $_SESSION[$attr] = $value;
+            });
+    }
+
+    /**
      * Définition d'un cookie
      *
      * @param string $name  Nom

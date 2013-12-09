@@ -29,7 +29,7 @@ class Request
     {
         Session::start();
 
-        return Session::getToken(session_id() . $method);
+        return Session::getToken(Session::$id . $method);
     }
 
     public function hasToken()
