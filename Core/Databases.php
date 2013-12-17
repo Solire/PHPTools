@@ -42,6 +42,11 @@ class Databases
         return self::$connections[$connectionName];
     }
 
+    public static function quote($input, $type = null, $connectionName = null)
+    {
+        return self::get($connectionName)->quote($input, $type);
+    }
+
     /**
      * Renvoi un QueryBuilder Doctrine sur une connection choisi par son nom
      *
