@@ -91,7 +91,7 @@ class View
                 foreach($vars as $var=>$value) {
                     unset($$var);
                 }
-            }            
+            }
         }
     }
 
@@ -116,12 +116,12 @@ class View
     {
         $filename = str_replace('\\', '/', strtolower(CONTROLLER)) . '.js';
         if(file_exists(PHPTOOLS_ROOT_PUBLIC_HTML . '/js/' . $filename)) {
-            echo '<script type="text/javascript" src="' . $root . 'js/' . $filename . '"></script>';
+            echo '<script type="text/javascript" src="' . $root . 'js/' . $filename . '?' . filemtime(PHPTOOLS_ROOT_PUBLIC_HTML . '/js/' . $filename) . '"></script>';
         }
     }
 
     public static function basehref()
     {
         return PHPTOOLS_BASEHREF;
-    }    
+    }
 }
