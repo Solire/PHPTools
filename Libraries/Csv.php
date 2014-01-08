@@ -101,6 +101,17 @@ class Csv
             if (!file_exists($this->file)) {
                 touch($this->file);
             }
+            
+            if (!is_readable($this->file)) {
+                \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
+                return null;
+            }
+            
+            if (!is_writable($this->file)) {
+                \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
+                return null;
+            }
+            
             if ($this->handle = fopen($this->file, 'r+')) {
                 if ($this->options['hasHeader']) {
                     if ($this->options['lineStart']) {
@@ -416,15 +427,11 @@ class Csv
         $data = false;
         $line = trim($line);
         if (!empty($line)) {
-            if ($this->container) {
-                $first = strpos($line, $this->container) + 1;
-                $last = strrpos($line, $this->container) - 1;
-                $line = substr($line, $first, $last);
-            }
-            $items = explode($this->container . $this->separator . $this->container, $line);
+            $items = str_getcsv($line, $this->separator, $this->container);
             foreach ($items as $item) {
                 $data[] = $item;
             }
+            
         }
         return $data;
     }
@@ -439,8 +446,17 @@ class Csv
         $rawLine = false;
         if ($line) {
             foreach ($line as $key => $val) {
-                $rawLine[] = $this->container . $val . $this->container;
+                $val = str_replace($this->container, $this->container . $this->container, $val);
+                if (strpos($val, $this->container) !== false
+                    || strpos($val, $this->separator) !== false
+                    || strpos($val, $break) !== false
+                ) {
+                    $val = $this->container . $val . $this->container;
+                }
+
+                $rawLine[] = $val;
             }
+
             $rawLine = implode($this->separator, $rawLine) . $break;
         }
         return $rawLine;
