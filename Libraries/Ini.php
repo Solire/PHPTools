@@ -120,15 +120,15 @@ class Ini
             $changes[$sectionName] = array();
 
             foreach ($rows as $key =>  $values) {
-                $changes[$sectionName][$key] = $this->decodeString($key);
+                $changes[$sectionName][$key] = self::decodeString($key);
                 
                 if (is_array($values)) {
                     foreach ($values as $ii => $value) {
-                        $values[$ii] = $this->decodeString($value);
+                        $values[$ii] = self::decodeString($value);
                     }
                     $tab[$sectionName][$key] = $values;
                 } else {
-                    $tab[$sectionName][$key] = $this->decodeString($values);
+                    $tab[$sectionName][$key] = self::decodeString($values);
                 }
             }
         }
@@ -152,7 +152,7 @@ class Ini
      * 
      * @return string
      */
-    protected function decodeString($str)
+    static protected function decodeString($str)
     {
         if (substr($str, 0, 1) == '%' 
             && substr($str, -1) == '%'
