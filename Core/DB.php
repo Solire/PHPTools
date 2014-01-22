@@ -60,7 +60,7 @@ class DB
 
     public static function quote($input, $type = null, $connectionName = null)
     {
-        if (is_string($input)) {
+        if (is_string($input) || is_numeric($input)) {
             return self::get($connectionName)->quote($input, $type);
         }
 
