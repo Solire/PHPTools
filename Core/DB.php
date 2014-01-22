@@ -5,13 +5,29 @@
 
 namespace PHPTools;
 
+use \Doctrine\DBAL\DriverManager;
+
 /**
  *
  * @uses \Doctrine\DBAL\DriverManager Manager de connection de la librairie
  * Doctrine
  */
-class Databases
+class DB
 {
+    /**
+     * Nombre de hit au total
+     *
+     * @var int
+     */
+    static public $hits = 0;
+
+    /**
+     * Nombre de hit par session
+     *
+     * @var int
+     */
+    static public $hits_session = 0;
+
     /**
      * Connections enregistrées
      *
@@ -44,7 +60,24 @@ class Databases
 
     public static function quote($input, $type = null, $connectionName = null)
     {
-        return self::get($connectionName)->quote($input, $type);
+        if (is_string($input)) {
+            return self::get($connectionName)->quote($input, $type);
+        }
+
+        foreach ($input as $k => $v) {
+            $input[$k] = self::quote($v);
+        }
+        return $input;
+    }
+
+    public static function columns($table, $connectionName = null)
+    {
+        $columns = array();
+        $columnsObjects = self::get($connectionName)->getSchemaManager()->listTableColumns($table);
+        foreach ($columnsObjects as $columnObject) {
+            $columns[] = $columnObject->getName();
+        }
+        return $columns;
     }
 
     /**
@@ -87,7 +120,23 @@ class Databases
      */
     protected static function createConnection($connectionParams)
     {
-        return \Doctrine\DBAL\DriverManager::getConnection($connectionParams);
+        $connection = DriverManager::getConnection($connectionParams);
+
+        $sqlLogger = new SQLLogger();
+        $configuration = $connection->getConfiguration()->setSQLLogger($sqlLogger);
+
+        return $connection;
+    }
+
+    public static function hitPlus()
+    {
+        self::$hits++;
+        self::$hits_session++;
+    }
+
+    public static function reset()
+    {
+        self::$hits_session = 0;
     }
 }
 
