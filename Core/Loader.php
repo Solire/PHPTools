@@ -25,6 +25,10 @@ namespace PHPTools;
  */
 class Loader
 {
+    /**
+     *
+     * @var Controller
+     */
     private $instance;
 
     public function __construct ($controller = false, $method = false)
@@ -60,7 +64,7 @@ class Loader
                     }
                 } else {
                     Exception::error(Libraries\I18n::__('Controller %s is not extended to %s.', '<b>' . $className . '</b>', '<b>\\PHPTools\\Controller</b>'));
-                }                      
+                }
             } else {
                 Exception::error(Libraries\I18n::__('Controller %s do not exists.', '<b>' . $className . '</b>'));
             }
