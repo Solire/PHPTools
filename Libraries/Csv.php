@@ -101,17 +101,17 @@ class Csv
             if (!file_exists($this->file)) {
                 touch($this->file);
             }
-            
+
             if (!is_readable($this->file)) {
                 \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
                 return null;
             }
-            
+
             if (!is_writable($this->file)) {
                 \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
                 return null;
             }
-            
+
             if ($this->handle = fopen($this->file, 'r+')) {
                 if ($this->options['hasHeader']) {
                     if ($this->options['lineStart']) {
@@ -159,7 +159,7 @@ class Csv
     public function getHeader ()
     {
         return $this->header;
-    }    
+    }
 
     /**
      * Retourne la ligne courante
@@ -431,7 +431,7 @@ class Csv
             foreach ($items as $item) {
                 $data[] = $item;
             }
-            
+
         }
         return $data;
     }
@@ -443,22 +443,23 @@ class Csv
      */
     public function toRaw ($line, $break = "\n")
     {
-        $rawLine = false;
+        $rawLine = array();
         if ($line) {
             foreach ($line as $key => $val) {
                 $val = str_replace($this->container, $this->container . $this->container, $val);
                 if (strpos($val, $this->container) !== false
                     || strpos($val, $this->separator) !== false
                     || strpos($val, $break) !== false
+                    || strpos($val, "\n") !== false
+                    || strpos($val, "\r") !== false
                 ) {
                     $val = $this->container . $val . $this->container;
                 }
 
                 $rawLine[] = $val;
             }
-
-            $rawLine = implode($this->separator, $rawLine) . $break;
         }
+        $rawLine = implode($this->separator, $rawLine) . $break;
         return $rawLine;
     }
 
@@ -470,13 +471,13 @@ class Csv
         $csv = new self ();
         $csv->open($file);
         $csv->addLine($line);
-    } 
+    }
 
     public static function arrayToRaw ($line, $break = "\n")
     {
         $csv = new self ();
         return $csv->toRaw($line, $break = "\n");
-    } 
+    }
 
     public static function arrayFromRaw ($lines, $options = array())
     {
@@ -485,7 +486,7 @@ class Csv
         $csv = new self ($options);
         foreach($lines as $line) {
             $data[] = $csv->fromRaw($line);
-        }        
+        }
         return $data;
-    } 
+    }
 }
