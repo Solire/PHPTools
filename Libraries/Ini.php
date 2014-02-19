@@ -23,7 +23,7 @@ class Ini
 
     /**
      * Constructeur à partir d'un tableau
-     * 
+     *
      * @param array $default Tableau de données
      */
     public function __construct(&$default = array())
@@ -33,9 +33,9 @@ class Ini
 
     /**
      * Récupère une section
-     * 
+     *
      * @param type $args
-     * 
+     *
      * @return type
      */
     public function get($args = false)
@@ -45,7 +45,7 @@ class Ini
 
     /**
      * Récupère toute les données
-     * 
+     *
      * @return array
      */
     public function gets()
@@ -79,23 +79,23 @@ class Ini
 
     /**
      * Charge un fichier ini
-     * 
+     *
      * @param string $filePath chemin du fichier ini à charger
      * @param string $name     nom de la section où insérer ce fichier
-     * 
+     *
      * @return array
      */
     public function loadFile($filePath, $name = false)
     {
         $tab = self::parse($filePath);
-        
+
         if ($name) {
             if (!isset($this->data[$name])) {
                 $this->data[$name] = array();
             }
 
             Arr::setTree($this->data[$name], $tab);
-            
+
             return $this->data[$name];
         } else {
             Arr::setTree($this->data, $tab);
@@ -103,25 +103,25 @@ class Ini
             return $this->data;
         }
     }
-    
+
     /**
      * Parse un fichier ini
-     * 
+     *
      * @param string $filePath
-     * 
+     *
      * @return array
      */
     static public function parse($filePath)
     {
         $tab = parse_ini_file($filePath, true);
-        
+
         $changes = array();
         foreach ($tab as $sectionName => $rows) {
             $changes[$sectionName] = array();
 
             foreach ($rows as $key =>  $values) {
                 $changes[$sectionName][$key] = self::decodeString($key);
-                
+
                 if (is_array($values)) {
                     foreach ($values as $ii => $value) {
                         $values[$ii] = self::decodeString($value);
@@ -132,7 +132,7 @@ class Ini
                 }
             }
         }
-                
+
         foreach ($changes as $sectionName => $change) {
             foreach ($change as $orig => $after) {
                 if ($orig !== $after) {
@@ -141,26 +141,26 @@ class Ini
                 }
             }
         }
-        
+
         return $tab;
     }
-    
+
     /**
      * Pour les chaînes particulières (compatibilité .ini), on rétablit la valeur
-     * 
+     *
      * @param string $str Chaîne à transformer
-     * 
+     *
      * @return string
      */
     static protected function decodeString($str)
     {
-        if (substr($str, 0, 1) == '%' 
-            && substr($str, -1) == '%'
+        if (substr($str, 0, 2) == '%%'
+            && substr($str, -2) == '%%'
         ) {
             /**
              * Chaîne urlencode
              */
-            $str = urldecode(substr($str, 1, -1));
+            $str = urldecode(substr($str, 2, -2));
         } elseif (substr($str, 0, 1) == "'"
             && substr($str, -1) == "'"
         ) {
