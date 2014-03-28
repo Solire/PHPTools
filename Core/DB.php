@@ -60,14 +60,14 @@ class DB
 
     public static function quote($input, $type = null, $connectionName = null)
     {
-        if (is_string($input) || is_numeric($input)) {
-            return self::get($connectionName)->quote($input, $type);
+        if (is_array($input)) {
+            foreach ($input as $k => $v) {
+                $input[$k] = self::quote($v, $type, $connectionName);
+            }
+            return $input;
         }
 
-        foreach ($input as $k => $v) {
-            $input[$k] = self::quote($v);
-        }
-        return $input;
+        return self::get($connectionName)->quote($input, $type);
     }
 
     public static function columns($table, $connectionName = null)
