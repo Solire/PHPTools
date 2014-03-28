@@ -15,16 +15,9 @@ namespace PHPTools\Libraries;
 abstract class Number
 {
     public static function percent($val1, $val2){
-        $percent = '-';
-        if($val1) {
-            $diff = round((($val1 - $val2) / $val1) * 100, 2);
-            if($diff > 0) {
-                $percent = '+'.$diff;
-            } else {
-                $percent = $diff;
-            }
-            $percent .= '%';
+        if ($val2 > 0) {
+            return round(100 * $val1 / $val2, 2) . '%';
         }
-        return $percent;
+        return 0 . '%';
     }
 }
