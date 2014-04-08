@@ -70,14 +70,17 @@ class DB
         return self::get($connectionName)->quote($input, $type);
     }
 
+    /**
+     *
+     *
+     * @param string $table
+     * @param string $connectionName
+     *
+     * @return \Doctrine\DBAL\Schema\Column[]
+     */
     public static function columns($table, $connectionName = null)
     {
-        $columns = array();
-        $columnsObjects = self::get($connectionName)->getSchemaManager()->listTableColumns($table);
-        foreach ($columnsObjects as $columnObject) {
-            $columns[] = $columnObject->getName();
-        }
-        return $columns;
+        return self::get($connectionName)->getSchemaManager()->listTableColumns($table);
     }
 
     /**
