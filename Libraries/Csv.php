@@ -112,20 +112,25 @@ class Csv
                 return null;
             }
 
-            if ($this->handle = fopen($this->file, 'r+')) {
-                if ($this->options['hasHeader']) {
-                    if ($this->options['lineStart']) {
-                        for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
-                            stream_get_line($this->handle, 0, "\n");
-                        }
+            $this->handle = fopen($this->file, 'r+');
+
+            if (!$this->handle) {
+                return false;
+            }
+
+            if ($this->options['hasHeader']) {
+                if ($this->options['lineStart']) {
+                    for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
+                        fgetcsv($this->handle, 0, $this->separator, $this->container);
                     }
-                    $this->rawHeader = stream_get_line($this->handle, 0, "\n");
-                    $this->header = self::fromRaw($this->rawHeader);
-                    if ($this->header) {
-                        foreach ($this->header as $i => &$header) {
-                            if (empty($header)) {
-                                $header = 'column' . ($i + 1);
-                            }
+                }
+
+                $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
+
+                if ($this->header) {
+                    foreach ($this->header as $i => &$header) {
+                        if (empty($header)) {
+                            $header = 'column' . ($i + 1);
                         }
                     }
                 }
