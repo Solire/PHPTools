@@ -15,10 +15,10 @@ namespace PHPTools\Libraries;
 class CsvData extends Csv
 {
     private $update;
-    
+
     /**
      * Charge le fichier CSV dans un tableau
-     * 
+     *
      * @return array
      */
     public function load()
@@ -36,11 +36,11 @@ class CsvData extends Csv
         }
         return $this->lines;
     }
-    
+
     public function rsort($orderby, $order=SORT_DESC){
         $this->sort($orderby, $order);
     }
-    
+
     public function find($key, $val, $return=false){
         $return = $return ? $return : $key;
         if($this->lines){
@@ -50,7 +50,7 @@ class CsvData extends Csv
         }
         return false;
     }
-    
+
     public function groupBy($key){
         $values = false;
         if($this->lines){
@@ -60,7 +60,7 @@ class CsvData extends Csv
         }
         return $values;
     }
-    
+
     public function limit($start, $limit){
         if($this->lines){
             $this->lines = array_slice($this->lines, $start, $limit);
@@ -93,7 +93,7 @@ class CsvData extends Csv
             }
         }
     }
-    
+
 
     public function removeLine($i){
         if(isset($this->lines[$i])) {
@@ -117,5 +117,5 @@ class CsvData extends Csv
                 file_put_contents($this->file, $lines, LOCK_EX);
             }else unlink($this->file);
         }
-    }    
+    }
 }
