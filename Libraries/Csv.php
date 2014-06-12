@@ -27,7 +27,11 @@ class Csv
 
     protected $separator = ';';
     protected $container = '"';
-    protected $max_size = 1024;
+    /**
+     * par défaut 1 Mo (1024*1024)
+     * @var int
+     */
+    protected $max_size = 1048576;
 
     public function __construct ($options = array())
     {
@@ -305,7 +309,6 @@ class Csv
                                 $this->header[] = $name;
                             }
                         }
-                        $this->rawHeader = self::toRaw($this->header, false);
                     } else {
                         foreach ($item as $name => $value) {
                             if (is_int($name)) {
@@ -314,9 +317,7 @@ class Csv
                                 $this->header[] = $name;
                             }
                         }
-                        $this->rawHeader = self::toRaw($this->header, false);
                     }
-                    $this->prepend($this->rawHeader);
 
                     /** Constitution de la ligne */
                     $this->line = new \stdClass ();
@@ -348,13 +349,25 @@ class Csv
         return $this->line;
     }
 
-    public function prepend ($str)
+    public function addHeader()
     {
         fseek($this->handle, 0);
-        fwrite($this->handle, $str . str_pad(" ", $this->max_size - strlen($str)) . "\n");
+
+        $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . md5($this->file) . '-prepend';
+        $handleTmp = fopen($fileTmp, "w");
+
+        fputcsv($handleTmp, $this->header, $this->separator, $this->container);
+
+        while (!feof($this->handle)) {
+          $bloc = fread($this->handle, $this->max_size);
+          fwrite($handleTmp, $bloc);
+        }
+
+        rename($fileTmp, $this->file);
+        fclose($handleTmp);
     }
 
-    public function append ($str)
+    public function append($str)
     {
         fseek($this->handle, 0, SEEK_END);
         fwrite($this->handle, $str);
@@ -366,7 +379,7 @@ class Csv
      * @param string $filename Nom du fichier à envoyer au navigateur
      * @return void
      */
-    public static function headers ($filename)
+    public static function headers($filename)
     {
         header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
         header('Content-Description: File Transfer');
@@ -382,10 +395,10 @@ class Csv
      *
      * @return void
      */
-    public function display ($filename)
+    public function display($filename)
     {
         self::headers($filename);
-        readfile($this->file);
+        readfile($this->fileMv);
     }
 
     /**
@@ -393,7 +406,7 @@ class Csv
      *
      * @return void
      */
-    public function delete ()
+    public function delete()
     {
         if ($this->fileMv) {
             $file = $this->fileMv;
@@ -411,9 +424,13 @@ class Csv
      *
      * @return void
      */
-    public function close ()
+    public function close()
     {
         if ($this->fileMv) {
+            /*
+             * on ajoute le header
+             */
+            $this->addHeader();
             rename($this->file, $this->fileMv);
         }
 
@@ -427,7 +444,7 @@ class Csv
      *
      * @return array
      */
-    public function fromRaw ($line)
+    public function fromRaw($line)
     {
         $data = false;
         $line = trim($line);
