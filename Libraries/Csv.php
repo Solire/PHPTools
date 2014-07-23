@@ -14,25 +14,57 @@ namespace PHPTools\Libraries;
 
 class Csv
 {
+    /**
+     * Chemin du fichier temporaire de travail
+     *
+     * @var string
+     */
     protected $file;
+
+    /**
+     * Chemin du fichier final
+     *
+     * @var string
+     */
     protected $fileMv;
+
+    /**
+     * Ressource du fichier de travail
+     *
+     * @var resource
+     */
     protected $handle;
+
     protected $rawHeader;
+
     protected $rawLine;
+
     protected $rawLines;
+
     protected $header;
+
     protected $line;
+
     protected $lines;
+
     protected $options;
 
     protected $separator = ';';
+
     protected $container = '"';
+
     /**
-     * par défaut 1 Mo (1024*1024)
+     * Taille de bloc par défaut 1 Mo (1024*1024)
+     *
      * @var int
      */
     protected $max_size = 1048576;
 
+    /**
+     *
+     *
+     * @param array $options
+     */
     public function __construct ($options = array())
     {
         /** @formatter:off */
@@ -77,7 +109,7 @@ class Csv
     public function create ($file)
     {
         $this->fileMv = $file;
-        $this->file = PHPTOOLS_ROOT_TMP . '/' . md5($file);
+        $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
         $this->delete();
         return $this->handle();
     }
@@ -90,14 +122,46 @@ class Csv
      */
     public function open ($file)
     {
-        $this->file = $file;
+        $this->fileMv = $file;
+        $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
+
+        if (file_exists($this->fileMv)
+            && filesize($this->fileMv)
+            && $this->options['hasHeader']
+        ) {
+            $handleMv = fopen($this->fileMv, 'r');
+            $handle   = fopen($this->file, 'w');
+
+            if ($this->options['lineStart']) {
+                for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
+                    fgetcsv($handleMv, 0, $this->separator, $this->container);
+                }
+            }
+
+            /*
+             * On récupère le header actuel du csv
+             */
+            $this->header = fgetcsv($handleMv, 0, $this->separator, $this->container);
+            if ($this->header) {
+                foreach ($this->header as $i => &$header) {
+                    if (empty($header)) {
+                        $header = 'column' . ($i + 1);
+                    }
+                }
+            }
+
+            while ($l = fgetcsv($handleMv, 0, $this->separator, $this->container)) {
+                fputcsv($handle, $l, $this->separator, $this->container);
+            }
+        }
+
         return $this->handle();
     }
 
     /**
      * Rechargement du fichier avec récupération du header
      *
-     * @return object
+     * @return resource|false|null
      */
     public function handle ()
     {
@@ -121,26 +185,30 @@ class Csv
             if (!$this->handle) {
                 return false;
             }
+        }
 
-            if ($this->options['hasHeader']) {
-                if ($this->options['lineStart']) {
-                    for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
-                        fgetcsv($this->handle, 0, $this->separator, $this->container);
-                    }
+        return $this->handle;
+    }
+
+    public function parseHeader()
+    {
+        if ($this->options['hasHeader']) {
+            if ($this->options['lineStart']) {
+                for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
+                    fgetcsv($this->handle, 0, $this->separator, $this->container);
                 }
+            }
 
-                $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
+            $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
 
-                if ($this->header) {
-                    foreach ($this->header as $i => &$header) {
-                        if (empty($header)) {
-                            $header = 'column' . ($i + 1);
-                        }
+            if ($this->header) {
+                foreach ($this->header as $i => &$header) {
+                    if (empty($header)) {
+                        $header = 'column' . ($i + 1);
                     }
                 }
             }
         }
-        return $this->handle;
     }
 
     /**
@@ -351,20 +419,22 @@ class Csv
 
     public function addHeader()
     {
-        fseek($this->handle, 0);
+        if ($this->header) {
+            fseek($this->handle, 0);
 
-        $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . md5($this->file) . '-prepend';
-        $handleTmp = fopen($fileTmp, "w");
+            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . md5($this->file) . '-prepend';
+            $handleTmp = fopen($fileTmp, "w");
 
-        fputcsv($handleTmp, $this->header, $this->separator, $this->container);
+            fputcsv($handleTmp, $this->header, $this->separator, $this->container);
 
-        while (!feof($this->handle)) {
-          $bloc = fread($this->handle, $this->max_size);
-          fwrite($handleTmp, $bloc);
+            while (!feof($this->handle)) {
+                $bloc = fread($this->handle, $this->max_size);
+                fwrite($handleTmp, $bloc);
+            }
+
+            rename($fileTmp, $this->file);
+            fclose($handleTmp);
         }
-
-        rename($fileTmp, $this->file);
-        fclose($handleTmp);
     }
 
     public function append($str)
@@ -490,15 +560,25 @@ class Csv
      */
     public static function log ($file, $line)
     {
-        $csv = new self ();
+        $csv = new self(array(
+            'hasHeader' => false,
+        ));
         $csv->open($file);
         $csv->addLine($line);
     }
 
+    /**
+     *
+     *
+     * @param type $line
+     * @param string $break
+     *
+     * @return type
+     */
     public static function arrayToRaw ($line, $break = "\n")
     {
-        $csv = new self ();
-        return $csv->toRaw($line, $break = "\n");
+        $csv = new self();
+        return $csv->toRaw($line, $break);
     }
 
     public static function arrayFromRaw ($lines, $options = array())
