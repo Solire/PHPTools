@@ -251,10 +251,6 @@ class Csv
         }
 
         if ($this->file) {
-            if (!file_exists($this->file)) {
-                touch($this->file);
-            }
-
             if (file_exists($this->file)) {
                 if (!is_readable($this->file)) {
                     \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
