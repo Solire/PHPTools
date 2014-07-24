@@ -177,8 +177,8 @@ class Csv
     {
         $this->file = $file;
 
-        if (file_exists($this->fileMv)
-            && filesize($this->fileMv)
+        if (file_exists($this->file)
+            && filesize($this->file) > 0
         ) {
             $this->headerAdded = true;
         }
