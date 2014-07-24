@@ -261,9 +261,7 @@ class Csv
                     return null;
                 }
 
-                if (!is_writable($this->file)
-                    && $mode != 'r'
-                ) {
+                if (!is_writable($this->file)) {
                     \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
                     return null;
                 }
