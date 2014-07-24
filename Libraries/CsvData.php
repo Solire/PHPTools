@@ -24,6 +24,10 @@ class CsvData extends Csv
     public function load()
     {
         $this->lines = false;
+        if (is_resource($this->handle)) {
+            fseek($this->handle, 0);
+        }
+
         while ($this->loop()) {
             $this->lines[] = $this->toObject()->getLine();
         }
