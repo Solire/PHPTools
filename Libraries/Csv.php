@@ -66,6 +66,13 @@ class Csv
     /**
      *
      *
+     * @var bool
+     */
+    protected $headerAdded = false;
+
+    /**
+     *
+     *
      * @var array
      */
     protected $line;
@@ -156,17 +163,38 @@ class Csv
         $this->fileMv = $file;
         $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
         $this->delete();
-        return $this->handle();
+        return $this->handle('w+');
     }
 
     /**
-     * Ouverture du fichier
+     *
+     *
+     * @param type $file
+     *
+     * @return type
+     */
+    public function quickOpen($file)
+    {
+        $this->file = $file;
+
+        if (file_exists($this->fileMv)
+            && filesize($this->fileMv)
+        ) {
+            $this->headerAdded = true;
+        }
+
+        $this->handle('a+');
+        return $this->handle;
+    }
+
+    /**
+     * Ouverture du fichier, il faudra bien utiliser la méthode close()
      *
      * @param string chemin du fichier
      *
      * @return resource
      */
-    public function open ($file)
+    public function open($file)
     {
         $this->fileMv = $file;
         $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
@@ -175,8 +203,8 @@ class Csv
             && filesize($this->fileMv)
         ) {
             if ($this->options['hasHeader']) {
+                $this->handle('w+');
                 $handleMv = fopen($this->fileMv, 'r');
-                $handle   = fopen($this->file, 'w');
 
                 if ($this->options['lineStart']) {
                     for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
@@ -197,48 +225,52 @@ class Csv
                 }
 
                 while ($l = fgetcsv($handleMv, 0, $this->separator, $this->container)) {
-                    fputcsv($handle, $l, $this->separator, $this->container);
+                    fputcsv($this->handle, $l, $this->separator, $this->container);
                 }
             } else {
                 rename($this->fileMv, $this->file);
+                $this->handle('a+');
             }
         }
 
-        $handle = $this->handle();
-
-        return $handle;
+        return $this->handle;
     }
 
     /**
-     * Rechargement du fichier avec récupération du header
+     * Ouverture du fichier
+     *
+     * @param $mode mode d'ouverture (cf \fopen)
      *
      * @return resource|false|null
      */
-    public function handle ()
+    private function handle($mode)
     {
+        if (substr($mode, 1, 1) != '+') {
+            \System\Notice::error('Mode d\'ouverture interdit, les fichiers doivent être ouvert en lecture et écriture, “' . $this->file . '”');
+            return null;
+        }
+
         if ($this->file) {
             if (!file_exists($this->file)) {
                 touch($this->file);
             }
 
-            if (!is_readable($this->file)) {
-                \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
-                return null;
+            if (file_exists($this->file)) {
+                if (!is_readable($this->file)) {
+                    \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
+                    return null;
+                }
+
+                if (!is_writable($this->file)
+                    && $mode != 'r'
+                ) {
+                    \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
+                    return null;
+                }
             }
 
-            if (!is_writable($this->file)) {
-                \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
-                return null;
-            }
-
-            $this->handle = fopen($this->file, 'r+');
-
-            if (!$this->handle) {
-                return false;
-            }
+            $this->handle = fopen($this->file, $mode);
         }
-
-        return $this->handle;
     }
 
     /**
@@ -411,7 +443,7 @@ class Csv
      */
     public function addLine ($item)
     {
-        $this->line = false;
+        $this->line    = false;
         $this->rawLine = false;
         if (is_resource($this->handle)) {
             if ($item) {
@@ -449,7 +481,7 @@ class Csv
                                 if (isset($item[$header])) {
                                     $this->line->{$header} = is_array($item[$header]) ? implode('\n', $item[$header]) : $item[$header];
                                 } else {
-                                    $this->linobjecte->{$header} = '';
+                                    $this->line->{$header} = '';
                                 }
                                 break;
                             case 'int' :
@@ -468,16 +500,21 @@ class Csv
                 $this->append($this->rawLine);
             }
         }
+
         return $this->line;
     }
 
     public function addHeader()
     {
+        if ($this->headerAdded) {
+            return true;
+        }
+
         if ($this->header) {
             fseek($this->handle, 0);
 
-            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . md5($this->file) . '-prepend';
-            $handleTmp = fopen($fileTmp, "w");
+            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . PID . md5($this->file) . '-prepend';
+            $handleTmp = fopen($fileTmp, 'w');
 
             fputcsv($handleTmp, $this->header, $this->separator, $this->container);
 
@@ -489,8 +526,15 @@ class Csv
             rename($fileTmp, $this->file);
             fclose($handleTmp);
         }
+
+        $this->headerAdded = true;
     }
 
+    /**
+     *
+     *
+     * @param type $str
+     */
     public function append($str)
     {
         fseek($this->handle, 0, SEEK_END);
@@ -615,8 +659,9 @@ class Csv
     public static function log ($file, $line)
     {
         $csv = new self();
-        $h = $csv->open($file);
-        $csv->addLine($line);
+        $csv->quickOpen($file);
+        $csv->addLine($line, true);
+        $csv->addHeader();
         $csv->close();
     }
 
