@@ -161,7 +161,7 @@ class Csv
     public function create ($file)
     {
         $this->fileMv = $file;
-        $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
+        $this->file   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
         $this->delete();
         return $this->handle('w+');
     }
@@ -197,7 +197,7 @@ class Csv
     public function open($file)
     {
         $this->fileMv = $file;
-        $this->file   = PHPTOOLS_ROOT_TMP . '/' . md5($file);
+        $this->file   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
 
         if (file_exists($this->fileMv)
             && filesize($this->fileMv)
@@ -507,7 +507,7 @@ class Csv
         if ($this->header) {
             fseek($this->handle, 0);
 
-            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . PID . md5($this->file) . '-prepend';
+            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($this->file) . '-prepend';
             $handleTmp = fopen($fileTmp, 'w');
 
             fputcsv($handleTmp, $this->header, $this->separator, $this->container);
