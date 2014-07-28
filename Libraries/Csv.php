@@ -231,6 +231,8 @@ class Csv
                 rename($this->fileMv, $this->file);
                 $this->handle('a+');
             }
+        } else {
+            $this->handle('w+');
         }
 
         return $this->handle;
