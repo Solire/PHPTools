@@ -117,6 +117,10 @@ class Ini
 
         $changes = array();
         foreach ($tab as $sectionName => $rows) {
+            if (!is_array($rows)) {
+                continue;
+            }
+
             $changes[$sectionName] = array();
 
             foreach ($rows as $key =>  $values) {
