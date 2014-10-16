@@ -630,6 +630,7 @@ class Csv
     public function toRaw ($line, $break = "\n")
     {
         $rawLine = array();
+        $line = (array) $line;
         if ($line) {
             foreach ($line as $key => $val) {
                 $val = str_replace($this->container, $this->container . $this->container, $val);
