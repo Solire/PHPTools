@@ -44,12 +44,12 @@ abstract class Dir
         if (is_dir($path)) {
             if ($dir = opendir($path)) {
                 while ($file = readdir($dir)) {
-                    $match = false;
+                    $match = [];
                     if (
                            $file != '..'
                         && $file != '.'
                         && $type($path . '/' . $file)
-                        && (!$regexp || ($regexp && preg_match("#" . $regexp . "#", $file, $match)))
+                        && (!$regexp || preg_match('#' . $regexp . '#', $file, $match))
                     ) {
                         $title = $file;
                         if($type == 'is_file') {
@@ -74,18 +74,31 @@ abstract class Dir
         return $items;
     }
 
-    public static function lastModifiedFile($path, $return='mtime')
+    /**
+     *
+     *
+     * @param string $path
+     * @param string $return
+     *
+     * @return mixed
+     */
+    public static function lastModifiedFile($path, $return = 'mtime')
     {
-        $file   = false;
-        $mtime  = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path)) as $fileinfo) {
-            if ($fileinfo->isFile()) {
-                if ($fileinfo->getMTime() > $mtime) {
-                    $file   = $fileinfo->getFilename();
-                    $mtime  = $fileinfo->getMTime();
-                }
+        $file  = null;
+        $mtime = 0;
+        $filesInfo = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path)
+        );
+
+        foreach ($filesInfo as $fileInfo) {
+            if ($fileInfo->isFile()
+                && $fileInfo->getMTime() > $mtime
+            ) {
+                $file  = $fileInfo->getFilename();
+                $mtime = $fileInfo->getMTime();
             }
         }
+
         switch($return) {
             case 'mtime':
                 return $mtime;
@@ -94,6 +107,6 @@ abstract class Dir
                 return $file;
                 break;
         }
-        return false;
+        return null;
     }
 }

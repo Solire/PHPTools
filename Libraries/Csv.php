@@ -52,16 +52,16 @@ class Csv
     /**
      *
      *
-     * @var string
+     * @var array
      */
-    protected $rawLines;
+    protected $rawLines = [];
 
     /**
      *
      *
      * @var array
      */
-    protected $header;
+    protected $header = [];
 
     /**
      *
@@ -75,21 +75,21 @@ class Csv
      *
      * @var array
      */
-    protected $line;
+    protected $line = [];
 
     /**
      *
      *
      * @var array
      */
-    protected $lines;
+    protected $lines = [];
 
     /**
      *
      *
      * @var array
      */
-    protected $options;
+    protected $options = [];
 
     /**
      *
@@ -106,6 +106,24 @@ class Csv
     protected $container = '"';
 
     /**
+     *
+     *
+     * @var string
+     */
+    protected $eolType = 'UNIX';
+
+    static protected $eolMapping = [
+        'UNIX' => "\n",
+        'DOS' => "\r\n",
+    ];
+
+    /**
+     *
+     * @var type
+     */
+    protected $charset = 'UTF-8';
+
+    /**
      * Taille de bloc par défaut 1 Mo (1024*1024)
      *
      * @var int
@@ -117,10 +135,10 @@ class Csv
      *
      * @param array $options options de paramétrage
      */
-    public function __construct ($options = array())
+    public function __construct($options = array())
     {
         /** @formatter:off */
-        $this->options = array_merge(array(
+        $this->options = array_merge([
             'hasHeader'     => true,
             'lineStart'     => 0,
             'isArray'       => false,
@@ -131,13 +149,20 @@ class Csv
             'filter'        => false,
             'separator'     => $this->separator,
             'container'     => $this->container,
-            'max_size'      => $this->max_size
-        ), $options);
+            'max_size'      => $this->max_size,
+            'eolType'       => $this->eolType,
+            'charset'       => $this->charset,
+        ], $options);
         /** @formatter:on */
 
+        $this->charset = $this->options['charset'];
         $this->separator = $this->options['separator'];
         $this->container = $this->options['container'];
         $this->max_size = $this->options['max_size'];
+        $this->eolType = $this->options['eolType'];
+        if (isset(self::$eolMapping[$this->eolType])) {
+            $this->eol = self::$eolMapping[$this->eolType];
+        }
     }
 
     /**
@@ -145,7 +170,7 @@ class Csv
      *
      * @return void
      */
-    public function __destruct ()
+    public function __destruct()
     {
         if (is_resource($this->handle)) {
             fclose($this->handle);
@@ -158,7 +183,7 @@ class Csv
      * @param string chemin du fichier
      * @return object
      */
-    public function create ($file)
+    public function create($file)
     {
         $this->fileMv = $file;
         $this->file   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
@@ -298,12 +323,14 @@ class Csv
      *
      * @return boolean
      */
-    public function loop ()
+    public function loop()
     {
         if (is_resource($this->handle)) {
             $feof = !feof($this->handle);
             $this->line = false;
-            if ($this->rawLine = stream_get_line($this->handle, 0, "\n")) {
+            $this->rawLine = stream_get_line($this->handle, 0, $this->eol);
+
+            if ($this->rawLine) {
                 return $feof;
             }
         }
@@ -315,7 +342,7 @@ class Csv
      *
      * @return array
      */
-    public function getHeader ()
+    public function getHeader()
     {
         return $this->header;
     }
@@ -325,7 +352,7 @@ class Csv
      *
      * @return array
      */
-    public function getLine ()
+    public function getLine()
     {
         return $this->line;
     }
@@ -335,7 +362,7 @@ class Csv
      *
      * @return array
      */
-    public function getLines ()
+    public function getLines()
     {
         return $this->lines;
     }
@@ -345,7 +372,7 @@ class Csv
      *
      * @return string
      */
-    public function getRawLine ()
+    public function getRawLine()
     {
         return $this->rawLine;
     }
@@ -355,7 +382,7 @@ class Csv
      *
      * @return string
      */
-    public function getRawLines ()
+    public function getRawLines()
     {
         return $this->rawLines;
     }
@@ -365,10 +392,15 @@ class Csv
      *
      * @return Csv
      */
-    public function toObject ()
+    public function toObject()
     {
         if (is_resource($this->handle)) {
+
+            if ($this->charset != 'UTF-8') {
+                $this->rawLine = iconv($this->charset, 'UTF-8//TRANSLIT', $this->rawLine);
+            }
             $data = self::fromRaw($this->rawLine);
+
             if ($this->header) {
                 foreach ($this->header as $i => $header) {
                     if ($this->options['isArray']) {
@@ -382,7 +414,7 @@ class Csv
                         }
                     } else {
                         if (!$this->line) {
-                            $this->line = new \stdClass ();
+                            $this->line = new \stdClass();
                         }
                         if (isset($data[$i])) {
                             $this->line->{$header} = $data[$i];
@@ -392,17 +424,19 @@ class Csv
                     }
                 }
             } else {
-                foreach ($data as $i => $value) {
-                    if ($this->options['isArray']) {
-                        if (!$this->line) {
-                            $this->line = array();
+                if ($data) {
+                    foreach ($data as $i => $value) {
+                        if ($this->options['isArray']) {
+                            if (!$this->line) {
+                                $this->line = array();
+                            }
+                            $this->line[$i] = $value;
+                        } else {
+                            if (!$this->line) {
+                                $this->line = new \stdClass();
+                            }
+                            $this->line->{$i} = $value;
                         }
-                        $this->line[$i] = $value;
-                    } else {
-                        if (!$this->line) {
-                            $this->line = new \stdClass ();
-                        }
-                        $this->line->{$i} = $value;
                     }
                 }
             }
@@ -416,7 +450,7 @@ class Csv
      *
      * @return void
      */
-    public function addLines ($items)
+    public function addLines($items)
     {
         $this->lines = false;
         $this->rawLines = false;
@@ -437,7 +471,7 @@ class Csv
      *
      * @return object
      */
-    public function addLine ($item)
+    public function addLine($item)
     {
         $this->line    = false;
         $this->rawLine = false;
@@ -627,7 +661,7 @@ class Csv
      *
      * @return array
      */
-    public function toRaw ($line, $break = "\n")
+    public function toRaw($line, $break = "\n")
     {
         $rawLine = array();
         $line = (array) $line;
@@ -653,7 +687,7 @@ class Csv
     /**
      * Insertion rapide dans un fichier de log
      */
-    public static function log ($file, $line)
+    public static function log($file, $line)
     {
         $csv = new self();
         $csv->quickOpen($file);
@@ -670,7 +704,7 @@ class Csv
      *
      * @return type
      */
-    public static function arrayToRaw ($line, $break = "\n")
+    public static function arrayToRaw($line, $break = "\n")
     {
         $csv = new self();
         return $csv->toRaw($line, $break);
@@ -684,7 +718,7 @@ class Csv
      *
      * @return array
      */
-    public static function arrayFromRaw ($lines, $options = array())
+    public static function arrayFromRaw($lines, $options = array())
     {
         $data = array();
         $lines = explode("\n", $lines);

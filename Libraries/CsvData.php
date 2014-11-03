@@ -31,6 +31,7 @@ class CsvData extends Csv
         while ($this->loop()) {
             $this->lines[] = $this->toObject()->getLine();
         }
+
         return $this->lines;
     }
 
