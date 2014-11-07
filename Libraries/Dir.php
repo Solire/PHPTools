@@ -22,6 +22,10 @@ abstract class Dir
     public static function create($path, $mode = 0755, $recursive = false)
     {
         if (!is_dir($path)) {
+            if (is_file($path)) {
+                throw new \Exception('Can\'t create a directory, a file already exists here : [' . $path . ']');
+            }
+
             mkdir($path, $mode, $recursive);
         }
         return $path;
