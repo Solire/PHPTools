@@ -31,7 +31,7 @@ abstract class Dir
                 throw new \Exception('Can\'t create the directory [' . $path . '], because [' . $parent . '] does not exist');
             }
 
-            if (!is_writable($parent)) {
+            if (file_exists($parent) && !is_writable($parent)) {
                 throw new \Exception('Can\'t create a directory [' . $path . '], because [' . $parent . '] is not writable');
             }
 
