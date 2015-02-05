@@ -26,6 +26,15 @@ abstract class Dir
                 throw new \Exception('Can\'t create a directory, a file already exists here : [' . $path . ']');
             }
 
+            $parent = pathinfo($path, PATHINFO_DIRNAME);
+            if (!file_exists($parent) && !$recursive) {
+                throw new \Exception('Can\'t create the directory [' . $path . '], because [' . $parent . '] does not exist');
+            }
+
+            if (!is_writable($parent)) {
+                throw new \Exception('Can\'t create a directory [' . $path . '], because [' . $parent . '] is not writable');
+            }
+
             mkdir($path, $mode, $recursive);
         }
         return $path;
