@@ -1,8 +1,6 @@
 <?php
 namespace PHPTools\Libraries;
 
-use PHPTools\Exception;
-
 /**
  * PHPTools Dir
  *
@@ -28,7 +26,7 @@ abstract class Dir
     public static function create($pathname, $mode = 0755, $recursive = false)
     {
         if (is_file($pathname)) {
-            throw new Exception(
+            throw new \Exception(
                 'Can\'t create a directory [' . $pathname . '], a file already exists'
             );
         }
@@ -36,14 +34,14 @@ abstract class Dir
         if (!file_exists($pathname)) {
             $parent = pathinfo($pathname, PATHINFO_DIRNAME);
             if (!file_exists($parent) && !$recursive) {
-                throw new Exception(
+                throw new \Exception(
                     'Failed to create the directory [' . $pathname . '], because '
                     . '[' . $parent . '] does not exist'
                 );
             }
 
             if (file_exists($parent) && !is_writable($parent)) {
-                throw new Exception(
+                throw new \Exception(
                     'Failed to create a directory [' . $pathname . '], because '
                     . '[' . $parent . '] is not writable'
                 );
