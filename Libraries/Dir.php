@@ -1,81 +1,155 @@
 <?php
+namespace PHPTools\Libraries;
+
 /**
- * PHPTools
- *
- * PHP version 5
+ * PHPTools Dir
  *
  * @package  PHPTools
  * @author   Jonathan Sahm <contact@johnstyle.fr>
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
  * @link     https://github.com/johnstyle/PHPTools.git
  */
-
-namespace PHPTools\Libraries;
-
 abstract class Dir
 {
-    public static function parent($path)
+    /**
+     * Attempts to create the directory specified by pathname
+     *
+     * @param type $pathname  The directory path
+     * @param type $mode      The right mode
+     * @param type $recursive Allows the creation of nested directories
+     * specified in the pathname
+     *
+     * @return The directory path
+     * @throws \Exception If unable to create the directory
+     * @see \mkdir
+     */
+    public static function create($pathname, $mode = 0755, $recursive = false)
     {
-        return preg_replace("#/[^/]+(/)?$#", "$1", $path);
-    }
-
-    public static function create($path, $mode = 0755, $recursive = false)
-    {
-        if (!is_dir($path)) {
-            mkdir($path, $mode, $recursive);
+        if (is_file($pathname)) {
+            throw new \Exception(
+                'Can\'t create a directory [' . $pathname . '], a file already exists'
+            );
         }
-        return $path;
+
+        if (!file_exists($pathname)) {
+            $parent = pathinfo($pathname, PATHINFO_DIRNAME);
+            if (!file_exists($parent) && !$recursive) {
+                throw new \Exception(
+                    'Failed to create the directory [' . $pathname . '], because '
+                    . '[' . $parent . '] does not exist'
+                );
+            }
+
+            if (file_exists($parent) && !is_writable($parent)) {
+                throw new \Exception(
+                    'Failed to create a directory [' . $pathname . '], because '
+                    . '[' . $parent . '] is not writable'
+                );
+            }
+
+            \mkdir($pathname, $mode, $recursive);
+        }
+
+        return $pathname;
     }
 
+    /**
+     * Lists the file
+     *
+     * @param type $path
+     * @param type $regexp
+     * @param type $limit
+     *
+     * @return type
+     */
     public static function getFiles($path, $regexp = false, $limit = false)
     {
         return self::open('is_file', $path, $regexp, $limit);
     }
 
+    /**
+     *
+     *
+     * @param type $path
+     * @param type $regexp
+     * @param type $limit
+     *
+     * @return type
+     */
     public static function gets($path, $regexp = false, $limit = false)
     {
         return self::open('is_dir', $path, $regexp, $limit);
     }
 
-    private static function open($type, $path, $regexp = false, $limit = false)
-    {
-        $i = 0;
-        $items = false;
-        if (is_dir($path)) {
-            if ($dir = opendir($path)) {
-                while ($file = readdir($dir)) {
-                    $match = [];
-                    if (
-                           $file != '..'
-                        && $file != '.'
-                        && $type($path . '/' . $file)
-                        && (!$regexp || preg_match('#' . $regexp . '#', $file, $match))
-                    ) {
-                        $title = $file;
-                        if($type == 'is_file') {
-                            $title = substr($file, 0, strpos($file, '.'));
-                        }
-                        $items[] = (object) array(
-                            'title'         => $title,
-                            'name'          => $file,
-                            'parentname'    => basename($path),
-                            'dir'           => $path,
-                            'path'          => $path . '/' . $file,
-                            'match'         => $match
-                        );
-                        if ($limit && $i >= $limit) {
-                            break;
-                        }
-                        $i++;
-                    }
+    /**
+     *
+     *
+     * @param type $type
+     * @param type $path
+     * @param type $regexp
+     * @param type $limit
+     *
+     * @return type
+     * @throws Exception
+     */
+    private static function open(
+        $type,
+        $path,
+        $regexp = false,
+        $limit = false
+    ) {
+        $ii = 0;
+        $items = array();
+
+        if (!file_exists($path)) {
+            return $items;
+        }
+
+        if (!is_dir($path)) {
+            throw new Exception(
+                'Failed to list content of [' . $path . '] because it\'s not a '
+                . 'directory'
+            );
+        }
+
+        $dir = \opendir($path);
+
+        if (!$dir) {
+            throw new Exception('Failed to open directory [' . $path . ']');
+        }
+
+        $parentPathInfo = \pathinfo($path);
+        while ($file = \readdir($dir)) {
+            $match = false;
+            if (
+                   $file != '..'
+                && $file != '.'
+                && $type($path . '/' . $file)
+                && (!$regexp || \preg_match("#" . $regexp . "#", $file, $match))
+            ) {
+                $pathInfo = \pathinfo($path . '/' . $file);
+
+                $items[] = (object) array(
+                    'title' => $pathInfo['filename'],
+                    'name' => $file,
+                    'parentname' => $parentPathInfo['filename'],
+                    'dir' => $path,
+                    'path' => $path . '/' . $file,
+                    'match' => $match
+                );
+
+                if ($limit && $ii >= $limit) {
+                    break;
                 }
+
+                $ii++;
             }
         }
+
         return $items;
     }
 
     /**
-     *
      *
      * @param string $path
      * @param string $return
@@ -107,6 +181,7 @@ abstract class Dir
                 return $file;
                 break;
         }
+
         return null;
     }
 }

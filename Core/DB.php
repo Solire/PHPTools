@@ -58,6 +58,16 @@ class DB
         return self::$connections[$connectionName];
     }
 
+    /**
+     * Quotes a string or an array
+     *
+     * @param string|array $input
+     * @param int          $type
+     * @param string       $connectionName
+     *
+     * @return string|array
+     * @see \PDO::quote()
+     */
     public static function quote($input, $type = null, $connectionName = null)
     {
         if (is_array($input)) {
@@ -124,6 +134,11 @@ class DB
     protected static function createConnection($connectionParams)
     {
         $connection = DriverManager::getConnection($connectionParams);
+
+        $connection
+            ->getDatabasePlatform()
+            ->registerDoctrineTypeMapping('enum', 'string')
+        ;
 
         $sqlLogger = new SQLLogger();
         $configuration = $connection->getConfiguration()->setSQLLogger($sqlLogger);
