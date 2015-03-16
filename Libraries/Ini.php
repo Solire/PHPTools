@@ -1,17 +1,14 @@
 <?php
+namespace PHPTools\Libraries;
+
 /**
  * PHPTools
- *
- * PHP version 5
  *
  * @package  PHPTools
  * @author   Jonathan Sahm <contact@johnstyle.fr>
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
  * @link     https://github.com/johnstyle/PHPTools.git
  */
-
-namespace PHPTools\Libraries;
-
 class Ini
 {
     /**
@@ -28,7 +25,7 @@ class Ini
      */
     public function __construct(&$default = array())
     {
-        $this->data =& $default;
+        $this->data = &$default;
     }
 
     /**
@@ -54,23 +51,37 @@ class Ini
     }
 
     /**
-     * Chargement des fichiers .ini
+     * Chargement des fichiers inis contenu dans un ou plusieur dossiers
      *
-     * @param string Chemin des fichiers .ini
+     * @param string|array $paths  Dossier(s) parent(s)
+     * @param string       $regexp Expressions régulières que les fichiers
+     * doivent respecter
+     * @param string       $method Format de la clé pour chaque fichier ini
+     * '<name>' sera remplacé
+     * - si une expression régulière est définie ($regexp), par le premier couple
+     * de parenthèses capturante
+     * - sinon par le nom du fichier ini (sans extension)
+     * exemple : si le chemin est 'aaa/bbb.ini', '<name>' sera remplacé par 'bbb'
      *
-     * @return array
+     * @return type
      */
     public function loadPath($paths, $regexp = false, $method = '<name>')
     {
-        $regexp = $regexp ? $regexp : "^(.+)\.ini$";
+        if (!$regexp) {
+            $regexp = '^(.+)\.ini$';
+        }
+
         foreach (Arr::to($paths) as $path) {
             $files = Dir::getFiles($path, $regexp);
-            if ($files) {
-                foreach ($files as $file) {
-                    $name = str_replace('-', '_', $file->match[1]);
-                    $name = $file->parentname == $name ? $name : str_replace('<name>', $name, $method);
-                    $this->loadFile($file->path, $name);
+
+            foreach ($files as $file) {
+                $name = str_replace('-', '_', $file->match[1]);
+
+                if ($file->parentname != $name) {
+                    $name = str_replace('<name>', $name, $method);
                 }
+
+                $this->loadFile($file->path, $name);
             }
         }
 
@@ -78,12 +89,12 @@ class Ini
     }
 
     /**
-     * Charge un fichier ini
+     * Charge un fichier ini, si un clé est défini, à la ligne défini par la clé
      *
-     * @param string $filePath chemin du fichier ini à charger
-     * @param string $name     nom de la section où insérer ce fichier
+     * @param string $filePath Chemin du fichier ini à charger
+     * @param string $name     Nom de la section où insérer ce fichier
      *
-     * @return array
+     * @return array Le résultat du parse du fichier parsé
      */
     public function loadFile($filePath, $name = false)
     {
@@ -97,11 +108,10 @@ class Ini
             Arr::setTree($this->data[$name], $tab);
 
             return $this->data[$name];
-        } else {
-            Arr::setTree($this->data, $tab);
-
-            return $this->data;
         }
+
+        Arr::setTree($this->data, $tab);
+        return $this->data;
     }
 
     /**
