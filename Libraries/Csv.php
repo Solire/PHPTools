@@ -191,6 +191,52 @@ class Csv
         return $this->handle('w+');
     }
 
+    public function read($file)
+    {
+        $this->file = $file;
+        $this->lines = [];
+
+        if (!file_exists($this->file)
+            && filesize($this->file) == 0
+        ) {
+            return $this->lines;
+        }
+
+        $handle = fopen($this->file, 'r');
+        if ($handle === false) {
+            return [];
+        }
+
+        if ($this->options['hasHeader']) {
+            if ($this->options['lineStart']) {
+                for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
+                    $p = fgetcsv($handle, 0, $this->separator, $this->container);
+                }
+            }
+
+            /*
+             * On récupère le header actuel du csv
+             */
+            $this->header = fgetcsv($handle, 0, $this->separator, $this->container);
+            if ($this->header) {
+                foreach ($this->header as $i => &$header) {
+                    if (empty($header)) {
+                        $header = 'column' . ($i + 1);
+                    }
+                }
+            }
+        }
+
+        while ($l = fgetcsv($handle, 0, $this->separator, $this->container)) {
+            $this->readLine($l);
+            $this->lines[] = $this->line;
+        }
+
+        fclose($handle);
+
+        return $this->lines;
+    }
+
     /**
      *
      *
@@ -445,6 +491,60 @@ class Csv
         return $this;
     }
 
+    public function readLine($item)
+    {
+        $item = (array) $item;
+
+        /** Ajout des nouveaux éléments au header */
+        if ($this->options['hasHeader']) {
+            $headerType = 'string';
+            if (!$this->header) {
+                $this->header = array();
+                foreach ($item as $name => $value) {
+                    if (is_int($name)) {
+                        $headerType = 'int';
+                    }
+                    if (!in_array($name, $this->header)) {
+                        $this->header[] = $name;
+                    }
+                }
+            } else {
+                foreach ($item as $name => $value) {
+                    if (is_int($name)) {
+                        $headerType = 'int';
+                    } elseif (!in_array($name, $this->header)) {
+                        $this->header[] = $name;
+                    }
+                }
+            }
+
+            /** Constitution de la ligne */
+            $this->line = new \stdClass ();
+            foreach ($this->header as $i => $header) {
+                switch($headerType) {
+                    case 'string' :
+                        if (isset($item[$header])) {
+                            $this->line->{$header} = is_array($item[$header]) ? implode('\n', $item[$header]) : $item[$header];
+                        } else {
+                            $this->line->{$header} = '';
+                        }
+                        break;
+                    case 'int' :
+                        if (isset($item[$i])) {
+                            $this->line->{$header} = is_array($item[$i]) ? implode('\n', $item[$i]) : $item[$i];
+                        } else {
+                            $this->line->{$header} = '';
+                        }
+                        break;
+                }
+            }
+        } else {
+            $this->line = $item;
+        }
+
+        return $this->line;
+    }
+
     /**
      * Ajoute plusieurs lignes de données
      *
@@ -452,8 +552,8 @@ class Csv
      */
     public function addLines($items)
     {
-        $this->lines = false;
-        $this->rawLines = false;
+        $this->lines = [];
+        $this->rawLines = '';
         if (is_resource($this->handle)) {
             if ($items) {
                 foreach ($items as $item) {
@@ -477,55 +577,7 @@ class Csv
         $this->rawLine = false;
         if (is_resource($this->handle)) {
             if ($item) {
-
-                $item = (array)$item;
-
-                /** Ajout des nouveaux éléments au header */
-                if ($this->options['hasHeader']) {
-                    $headerType = 'string';
-                    if (!$this->header) {
-                        $this->header = array();
-                        foreach ($item as $name => $value) {
-                            if (is_int($name)) {
-                                $headerType = 'int';
-                            }
-                            if (!in_array($name, $this->header)) {
-                                $this->header[] = $name;
-                            }
-                        }
-                    } else {
-                        foreach ($item as $name => $value) {
-                            if (is_int($name)) {
-                                $headerType = 'int';
-                            } elseif (!in_array($name, $this->header)) {
-                                $this->header[] = $name;
-                            }
-                        }
-                    }
-
-                    /** Constitution de la ligne */
-                    $this->line = new \stdClass ();
-                    foreach ($this->header as $i => $header) {
-                        switch($headerType) {
-                            case 'string' :
-                                if (isset($item[$header])) {
-                                    $this->line->{$header} = is_array($item[$header]) ? implode('\n', $item[$header]) : $item[$header];
-                                } else {
-                                    $this->line->{$header} = '';
-                                }
-                                break;
-                            case 'int' :
-                                if (isset($item[$i])) {
-                                    $this->line->{$header} = is_array($item[$i]) ? implode('\n', $item[$i]) : $item[$i];
-                                } else {
-                                    $this->line->{$header} = '';
-                                }
-                                break;
-                        }
-                    }
-                } else {
-                    $this->line = $item;
-                }
+                $this->readLine($item);
                 $this->rawLine = self::toRaw($this->line);
                 $this->append($this->rawLine);
             }
