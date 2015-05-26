@@ -202,22 +202,23 @@ class Csv
             return $this->lines;
         }
 
-        $handle = fopen($this->file, 'r');
-        if ($handle === false) {
+        $this->handle('r');
+        if ($this->handle === false) {
             return [];
         }
 
         if ($this->options['hasHeader']) {
             if ($this->options['lineStart']) {
                 for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
-                    $p = fgetcsv($handle, 0, $this->separator, $this->container);
+                    $p = fgetcsv($this->handle, 0, $this->separator, $this->container);
                 }
             }
 
             /*
              * On récupère le header actuel du csv
              */
-            $this->header = fgetcsv($handle, 0, $this->separator, $this->container);
+            $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
+
             if ($this->header) {
                 foreach ($this->header as $i => &$header) {
                     if (empty($header)) {
@@ -227,12 +228,12 @@ class Csv
             }
         }
 
-        while ($l = fgetcsv($handle, 0, $this->separator, $this->container)) {
+        while ($l = fgetcsv($this->handle, 0, $this->separator, $this->container)) {
             $this->readLine($l);
             $this->lines[] = $this->line;
         }
 
-        fclose($handle);
+        fclose($this->handle);
 
         return $this->lines;
     }
@@ -318,11 +319,6 @@ class Csv
      */
     private function handle($mode)
     {
-        if (substr($mode, 1, 1) != '+') {
-            \System\Notice::error('Mode d\'ouverture interdit, les fichiers doivent être ouvert en lecture et écriture, “' . $this->file . '”');
-            return null;
-        }
-
         if ($this->file) {
             if (file_exists($this->file)) {
                 if (!is_readable($this->file)) {
@@ -337,7 +333,11 @@ class Csv
             }
 
             $this->handle = fopen($this->file, $mode);
+
+            return true;
         }
+
+        return false;
     }
 
     /**
