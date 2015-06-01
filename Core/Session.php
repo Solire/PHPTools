@@ -62,14 +62,18 @@ class Session
 
     public static function open()
     {
-        if (isset($_COOKIE[session_name()])) {
-            $sessid = $_COOKIE[session_name()];
+        $sessionName = session_name();
+
+        if (isset($_COOKIE[$sessionName])) {
+            $sessid = $_COOKIE[$sessionName];
+        } elseif (isset($_GET[$sessionName])) {
+            $sessid = $_GET[$sessionName];
         } else {
             return session_start();
         }
 
         if (!preg_match('/^[a-z0-9]{26,40}$/', $sessid)) {
-            setcookie(session_name(), null, time() - 3600, '/');
+            setcookie($sessionName, null, time() - 3600, '/');
             return false;
         }
 
