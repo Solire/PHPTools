@@ -223,6 +223,8 @@ class Csv
                 foreach ($this->header as $i => &$header) {
                     if (empty($header)) {
                         $header = 'column' . ($i + 1);
+                    } else {
+                        $header = trim($header);
                     }
                 }
             }
@@ -292,6 +294,8 @@ class Csv
                     foreach ($this->header as $i => &$header) {
                         if (empty($header)) {
                             $header = 'column' . ($i + 1);
+                        } else {
+                            $header = trim($header);
                         }
                     }
                 }
@@ -358,6 +362,8 @@ class Csv
                 foreach ($this->header as $i => &$header) {
                     if (empty($header)) {
                         $header = 'column' . ($i + 1);
+                    } else {
+                        $header = trim($header);
                     }
                 }
             }
