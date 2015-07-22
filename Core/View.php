@@ -108,7 +108,7 @@ class View
     {
         $filename = str_replace('\\', '/', strtolower(CONTROLLER)) . '.css';
         if(file_exists(PHPTOOLS_ROOT_PUBLIC_HTML . '/css/' . $filename)) {
-            echo '<link href="' . $root . 'css/' . $filename . '" rel="stylesheet" media="screen" />';
+            echo '<link href="' . $root . 'css/' . $filename . '?' . filemtime(PHPTOOLS_ROOT_PUBLIC_HTML . '/css/' . $filename) . '" rel="stylesheet" media="screen" />';
         }
     }
 
