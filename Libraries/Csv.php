@@ -113,7 +113,7 @@ class Csv
     protected $eolType = 'UNIX';
 
     static protected $eolMapping = [
-        'UNIX' => "\n",
+        'UNIX' => PHP_EOL,
         'DOS' => "\r\n",
     ];
 
@@ -217,16 +217,10 @@ class Csv
             /*
              * On récupère le header actuel du csv
              */
-            $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
+            $header = fgetcsv($this->handle, 0, $this->separator, $this->container);
 
-            if ($this->header) {
-                foreach ($this->header as $i => &$header) {
-                    if (empty($header)) {
-                        $header = 'column' . ($i + 1);
-                    } else {
-                        $header = trim($header);
-                    }
-                }
+            if ($header !== false) {
+                $this->parseHeader($header);
             }
         }
 
@@ -289,15 +283,9 @@ class Csv
                 /*
                  * On récupère le header actuel du csv
                  */
-                $this->header = fgetcsv($handleMv, 0, $this->separator, $this->container);
-                if ($this->header) {
-                    foreach ($this->header as $i => &$header) {
-                        if (empty($header)) {
-                            $header = 'column' . ($i + 1);
-                        } else {
-                            $header = trim($header);
-                        }
-                    }
+                $header = fgetcsv($handleMv, 0, $this->separator, $this->container);
+                if ($header !== false) {
+                    $this->parseHeader($header);
                 }
 
                 while ($l = fgetcsv($handleMv, 0, $this->separator, $this->container)) {
@@ -347,25 +335,24 @@ class Csv
     /**
      * Inutilisé actuellement
      */
-    public function parseHeader()
+    public function parseHeader($header)
     {
         if ($this->options['hasHeader']) {
-            if ($this->options['lineStart']) {
-                for ($i = 0; $i < ($this->options['lineStart'] - 1); $i++) {
-                    fgetcsv($this->handle, 0, $this->separator, $this->container);
-                }
-            }
+            $this->header = [];
 
-            $this->header = fgetcsv($this->handle, 0, $this->separator, $this->container);
-
-            if ($this->header) {
-                foreach ($this->header as $i => &$header) {
-                    if (empty($header)) {
-                        $header = 'column' . ($i + 1);
-                    } else {
-                        $header = trim($header);
+            foreach ($header as $i => $cell) {
+                if (empty($cell)) {
+                    $label = 'column' . ($i + 1);
+                } else {
+                    $cpt = 1;
+                    $label = trim($cell);
+                    while (in_array($label, $this->header)) {
+                        $label = $cell . '_' . $cpt;
+                        $cpt++;
                     }
                 }
+
+                $this->header[] = $label;
             }
         }
     }
@@ -530,14 +517,14 @@ class Csv
                 switch($headerType) {
                     case 'string' :
                         if (isset($item[$header])) {
-                            $this->line->{$header} = is_array($item[$header]) ? implode('\n', $item[$header]) : $item[$header];
+                            $this->line->{$header} = is_array($item[$header]) ? implode(PHP_EOL, $item[$header]) : $item[$header];
                         } else {
                             $this->line->{$header} = '';
                         }
                         break;
                     case 'int' :
                         if (isset($item[$i])) {
-                            $this->line->{$header} = is_array($item[$i]) ? implode('\n', $item[$i]) : $item[$i];
+                            $this->line->{$header} = is_array($item[$i]) ? implode(PHP_EOL, $item[$i]) : $item[$i];
                         } else {
                             $this->line->{$header} = '';
                         }
@@ -719,7 +706,7 @@ class Csv
      *
      * @return array
      */
-    public function toRaw($line, $break = "\n")
+    public function toRaw($line, $break = PHP_EOL)
     {
         $rawLine = array();
         $line = (array) $line;
@@ -729,7 +716,7 @@ class Csv
                 if (strpos($val, $this->container) !== false
                     || strpos($val, $this->separator) !== false
                     || strpos($val, $break) !== false
-                    || strpos($val, "\n") !== false
+                    || strpos($val, PHP_EOL) !== false
                     || strpos($val, "\r") !== false
                 ) {
                     $val = $this->container . $val . $this->container;
@@ -762,7 +749,7 @@ class Csv
      *
      * @return type
      */
-    public static function arrayToRaw($line, $break = "\n")
+    public static function arrayToRaw($line, $break = PHP_EOL)
     {
         $csv = new self();
         return $csv->toRaw($line, $break);
@@ -779,7 +766,7 @@ class Csv
     public static function arrayFromRaw($lines, $options = array())
     {
         $data = array();
-        $lines = explode("\n", $lines);
+        $lines = explode(PHP_EOL, $lines);
         $csv = new self($options);
         foreach($lines as $line) {
             $data[] = $csv->fromRaw($line);
