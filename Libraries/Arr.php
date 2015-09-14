@@ -14,6 +14,14 @@ namespace PHPTools\Libraries;
 
 abstract class Arr
 {
+    /**
+     *
+     *
+     * @param mixed $array
+     * @param mixed $items
+     *
+     * @return boolean
+     */
     public static function getTree ($array, $items = false)
     {
         if (is_object($array)) {
@@ -43,6 +51,7 @@ abstract class Arr
                 return $array[$name];
             }
         }
+
         return false;
     }
 

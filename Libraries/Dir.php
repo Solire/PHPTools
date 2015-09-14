@@ -56,13 +56,13 @@ abstract class Dir
     }
 
     /**
-     * Lists the file
+     * Lists the files
      *
-     * @param type $path
-     * @param type $regexp
-     * @param type $limit
+     * @param string $path   The directory's path
+     * @param string $regexp The regular expression
+     * @param int    $limit  The maximum number of files to return
      *
-     * @return type
+     * @return array
      */
     public static function getFiles($path, $regexp = false, $limit = false)
     {
@@ -70,13 +70,13 @@ abstract class Dir
     }
 
     /**
+     * Lists the directories
      *
+     * @param string $path   The directory's path
+     * @param string $regexp The regular expression
+     * @param int    $limit  The maximum number of files to return
      *
-     * @param type $path
-     * @param type $regexp
-     * @param type $limit
-     *
-     * @return type
+     * @return array
      */
     public static function gets($path, $regexp = false, $limit = false)
     {
@@ -84,14 +84,14 @@ abstract class Dir
     }
 
     /**
+     * List the files
      *
+     * @param string $type   'is_file' ou 'is_dir'
+     * @param string $path   The directory's path
+     * @param string $regexp The regular expression
+     * @param int    $limit  The maximum number of files to return
      *
-     * @param type $type
-     * @param type $path
-     * @param type $regexp
-     * @param type $limit
-     *
-     * @return type
+     * @return array
      * @throws Exception
      */
     private static function open(
@@ -101,7 +101,7 @@ abstract class Dir
         $limit = false
     ) {
         $ii = 0;
-        $items = array();
+        $items = [];
 
         if (!file_exists($path)) {
             return $items;
@@ -124,7 +124,7 @@ abstract class Dir
         while ($file = \readdir($dir)) {
             $match = false;
             if (
-                   $file != '..'
+                $file != '..'
                 && $file != '.'
                 && $type($path . '/' . $file)
                 && (!$regexp || \preg_match("#" . $regexp . "#", $file, $match))
@@ -152,9 +152,11 @@ abstract class Dir
     }
 
     /**
+     * Cherche le fichier le plus récent et renvoi son chemin ou sa date de
+     * modification
      *
-     * @param string $path
-     * @param string $return
+     * @param string $path   Chemin du dossier
+     * @param string $return Information de retour
      *
      * @return mixed
      */
