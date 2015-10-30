@@ -19,10 +19,13 @@ abstract class Arr
         if (is_object($array)) {
             $array = (array)$array;
         }
-        if (!is_array($items) && strstr($items, '.')) {
+
+        if (!is_array($items) && strstr($items, '.') && !isset($array[$items])) {
             $items = explode('.', $items);
         }
+
         $items = is_array($items) && count($items) == 1 ? $items[0] : $items;
+
         if ($items === false || (is_array($items) && !count($items))) {
             return $array;
         } elseif (is_array($items)) {
