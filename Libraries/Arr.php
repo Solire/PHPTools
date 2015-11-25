@@ -1,4 +1,7 @@
 <?php
+
+namespace PHPTools\Libraries;
+
 /**
  * PHPTools
  *
@@ -9,15 +12,21 @@
  * @license  http://www.gnu.org/copyleft/gpl.html GNU General Public License
  * @link     https://github.com/johnstyle/PHPTools.git
  */
-
-namespace PHPTools\Libraries;
-
 abstract class Arr
 {
-    public static function getTree ($array, $items = false)
+
+    /**
+     * Explore an array with the keys given
+     *
+     * @param mixed $array An array or an object (it will be cast into an array)
+     * @param mixed $items If a string it will be split by "." or an array
+     *
+     * @return mixed Returns false if one of the key is not founed
+     */
+    public static function getTree($array, $items = false)
     {
         if (is_object($array)) {
-            $array = (array)$array;
+            $array = (array) $array;
         }
 
         if (!is_array($items) && strstr($items, '.') && !isset($array[$items])) {
@@ -49,7 +58,7 @@ abstract class Arr
         return false;
     }
 
-    public static function setTree (&$array, $items)
+    public static function setTree(&$array, $items)
     {
         if ($items !== false) {
             if (is_array($items)) {
@@ -74,7 +83,7 @@ abstract class Arr
     /**
      * Remplacement des espaces
      */
-    public static function explode ($sep, $array)
+    public static function explode($sep, $array)
     {
         if ($array) {
             return array_map('trim', explode($sep, $array));
@@ -85,7 +94,7 @@ abstract class Arr
     /**
      * Convertit une chaine en tableau
      */
-    public static function to ($array)
+    public static function to($array)
     {
         if (!is_array($array)) {
             return array($array);
@@ -93,17 +102,17 @@ abstract class Arr
         return $array;
     }
 
-    public static function toObject (&$array)
+    public static function toObject(&$array)
     {
         foreach ($array as &$item) {
-            $item = (object)$item;
+            $item = (object) $item;
         }
     }
 
     /**
      * Tri un tableau
      */
-    public static function sort (&$array, $key, $order = SORT_DESC)
+    public static function sort(&$array, $key, $order = SORT_DESC)
     {
         if ($array) {
             $tmp = array();
