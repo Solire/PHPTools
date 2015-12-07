@@ -25,19 +25,14 @@ namespace PHPTools;
  */
 class Exception extends \Exception
 {
-    public function __construct($msg = NULL, $code = 0) 
-    {
-        parent::__construct($msg, $code);
-    }
-
     public function showError()
     {
         die('<div style="color:red">' . $this->getMessage() . '</div>');
     }
 
-    public static function error($msg = NULL, $code = 0) 
+    public static function error($msg = NULL, $code = 0)
     {
         $Exception = new self($msg, $code);
         $Exception->showError();
-    }    
+    }
 }
