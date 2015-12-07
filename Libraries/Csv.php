@@ -1,4 +1,5 @@
 <?php
+
 /**
  * PHPTools
  *
@@ -12,8 +13,12 @@
 
 namespace PHPTools\Libraries;
 
+use Exception;
+use stdClass;
+
 class Csv
 {
+
     /**
      * Chemin du fichier temporaire de travail
      *
@@ -111,7 +116,6 @@ class Csv
      * @var string
      */
     protected $eolType = 'UNIX';
-
     static protected $eolMapping = [
         'UNIX' => PHP_EOL,
         'DOS' => "\r\n",
@@ -139,22 +143,21 @@ class Csv
     {
         /** @formatter:off */
         $this->options = array_merge([
-            'hasHeader'     => true,
-            'lineStart'     => 0,
-            'isArray'       => false,
-            'orderby'       => false,
-            'order'         => SORT_ASC,
-            'limit'         => 0,
-            'start'         => 0,
-            'filter'        => false,
-            'separator'     => $this->separator,
-            'container'     => $this->container,
-            'max_size'      => $this->max_size,
-            'eolType'       => $this->eolType,
-            'charset'       => $this->charset,
-        ], $options);
+            'hasHeader' => true,
+            'lineStart' => 0,
+            'isArray' => false,
+            'orderby' => false,
+            'order' => SORT_ASC,
+            'limit' => 0,
+            'start' => 0,
+            'filter' => false,
+            'separator' => $this->separator,
+            'container' => $this->container,
+            'max_size' => $this->max_size,
+            'eolType' => $this->eolType,
+            'charset' => $this->charset,
+                ], $options);
         /** @formatter:on */
-
         $this->charset = $this->options['charset'];
         $this->separator = $this->options['separator'];
         $this->container = $this->options['container'];
@@ -186,7 +189,7 @@ class Csv
     public function create($file)
     {
         $this->fileMv = $file;
-        $this->file   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
+        $this->file = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
         $this->delete();
         return $this->handle('w+');
     }
@@ -203,6 +206,7 @@ class Csv
         }
 
         $this->handle('r');
+
         if ($this->handle === false) {
             return [];
         }
@@ -265,7 +269,7 @@ class Csv
     public function open($file)
     {
         $this->fileMv = $file;
-        $this->file   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
+        $this->file = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($file);
 
         if (file_exists($this->fileMv)
             && filesize($this->fileMv)
@@ -305,23 +309,24 @@ class Csv
     /**
      * Ouverture du fichier
      *
-     * @param $mode mode d'ouverture (cf \fopen)
+     * @param string $mode mode d'ouverture (cf \fopen)
      *
-     * @return resource|false|null
+     * @return boolean
+     * @throws Exception Quand l'ouverture du fichier échoue
      */
     private function handle($mode)
     {
         if ($this->file) {
             if (file_exists($this->file)) {
                 if (!is_readable($this->file)) {
-                    \System\Notice::error('Impossible de lire le fichier “' . $this->file . '”');
-                    return null;
+                    throw new Exception('Impossible de lire le fichier “' . $this->file . '”');
                 }
 
-                if (!is_writable($this->file)) {
-                    \System\Notice::error('Impossible d\'écrire le fichier “' . $this->file . '”');
-                    return null;
+                if (!is_writable($this->file) && $mode !== 'r') {
+                    throw new Exception('Impossible d\'écrire le fichier “' . $this->file . '”');
                 }
+            } elseif ($mode === 'r') {
+                throw new Exception('Le fichier “' . $this->file . '” n\'existe pas');
             }
 
             $this->handle = fopen($this->file, $mode);
@@ -429,7 +434,7 @@ class Csv
     /**
      * Transforme la ligne CSV en objet
      *
-     * @return Csv
+     * @return self
      */
     public function toObject()
     {
@@ -453,7 +458,7 @@ class Csv
                         }
                     } else {
                         if (!$this->line) {
-                            $this->line = new \stdClass();
+                            $this->line = new stdClass();
                         }
                         if (isset($data[$i])) {
                             $this->line->{$header} = $data[$i];
@@ -472,7 +477,7 @@ class Csv
                             $this->line[$i] = $value;
                         } else {
                             if (!$this->line) {
-                                $this->line = new \stdClass();
+                                $this->line = new stdClass();
                             }
                             $this->line->{$i} = $value;
                         }
@@ -512,9 +517,9 @@ class Csv
             }
 
             /** Constitution de la ligne */
-            $this->line = new \stdClass ();
+            $this->line = new stdClass ();
             foreach ($this->header as $i => $header) {
-                switch($headerType) {
+                switch ($headerType) {
                     case 'string' :
                         if (isset($item[$header])) {
                             $this->line->{$header} = is_array($item[$header]) ? implode(PHP_EOL, $item[$header]) : $item[$header];
@@ -562,11 +567,11 @@ class Csv
     /**
      * Ajoute une ligne de données
      *
-     * @return object
+     * @return stdClass
      */
     public function addLine($item)
     {
-        $this->line    = false;
+        $this->line = false;
         $this->rawLine = false;
         if (is_resource($this->handle)) {
             if ($item) {
@@ -579,16 +584,21 @@ class Csv
         return $this->line;
     }
 
+    /**
+     *
+     *
+     * @return void
+     */
     public function addHeader()
     {
         if ($this->headerAdded) {
-            return true;
+            return;
         }
 
         if ($this->header) {
             fseek($this->handle, 0);
 
-            $fileTmp   = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($this->file) . '-prepend';
+            $fileTmp = PHPTOOLS_ROOT_TMP . '/' . getmypid() . md5($this->file) . '-prepend';
             $handleTmp = fopen($fileTmp, 'w');
 
             fputcsv($handleTmp, $this->header, $this->separator, $this->container);
@@ -609,6 +619,8 @@ class Csv
      *
      *
      * @param type $str
+     *
+     * @return void
      */
     public function append($str)
     {
@@ -620,6 +632,7 @@ class Csv
      * Headers du fichier CSV
      *
      * @param string $filename Nom du fichier à envoyer au navigateur
+     *
      * @return void
      */
     public static function headers($filename)
@@ -696,7 +709,6 @@ class Csv
             foreach ($items as $item) {
                 $data[] = $item;
             }
-
         }
         return $data;
     }
@@ -731,6 +743,8 @@ class Csv
 
     /**
      * Insertion rapide dans un fichier de log
+     *
+     * @return void
      */
     public static function log($file, $line)
     {
@@ -768,9 +782,10 @@ class Csv
         $data = array();
         $lines = explode(PHP_EOL, $lines);
         $csv = new self($options);
-        foreach($lines as $line) {
+        foreach ($lines as $line) {
             $data[] = $csv->fromRaw($line);
         }
         return $data;
     }
+
 }
