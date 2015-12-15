@@ -197,6 +197,7 @@ class Csv
     public function read($file)
     {
         $this->file = $file;
+        $this->fileMv = $file;
         $this->lines = [];
 
         if (!file_exists($this->file)
