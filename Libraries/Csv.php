@@ -351,7 +351,9 @@ class Csv
                     $label = 'column' . ($i + 1);
                 } else {
                     $cpt = 1;
-                    $label = trim($cell);
+                    $label = $cell;
+                    $label = preg_replace('#[\v\h]+#', ' ', $label);
+                    $label = trim($label);
                     while (in_array($label, $this->header)) {
                         $label = $cell . '_' . $cpt;
                         $cpt++;
