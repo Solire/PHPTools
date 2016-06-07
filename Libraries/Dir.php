@@ -1,5 +1,8 @@
 <?php
+
 namespace PHPTools\Libraries;
+
+use Exception;
 
 /**
  * PHPTools Dir
@@ -20,37 +23,51 @@ abstract class Dir
      * specified in the pathname
      *
      * @return The directory path
-     * @throws \Exception If unable to create the directory
-     * @see \mkdir
+     * @throws Exception If unable to create the directory
+     * @see mkdir
      */
     public static function create($pathname, $mode = 0755, $recursive = false)
     {
+        if (strlen($pathname) === 0) {
+            throw new Exception(
+                'Can\'t create a directory with an empty path'
+            );
+        }
+
         if (is_dir($pathname)) {
             return $pathname;
         }
 
         if (file_exists($pathname)) {
-            throw new \Exception(
-                'Can\'t create a directory [' . $pathname . '], a file already exists'
-            );
+            throw new Exception(sprintf(
+                'Can\'t create a directory [%s], a file already exists',
+                $pathname
+            ));
         }
 
         $parent = pathinfo($pathname, PATHINFO_DIRNAME);
         if (!file_exists($parent) && !$recursive) {
-            throw new \Exception(
-                'Failed to create the directory [' . $pathname . '], because '
-                . '[' . $parent . '] does not exist'
-            );
+            throw new Exception(sprintf(
+                'Failed to create the directory [%s], because [%s] does not exist',
+                $pathname,
+                $parent
+            ));
         }
 
         if (file_exists($parent) && !is_writable($parent)) {
-            throw new \Exception(
-                'Failed to create a directory [' . $pathname . '], because '
-                . '[' . $parent . '] is not writable'
-            );
+            throw new Exception(sprintf(
+                'Failed to create a directory [%s], because [%s] is not writable',
+                $pathname,
+                $parent
+            ));
         }
 
-        \mkdir($pathname, $mode, $recursive);
+        if (!mkdir($pathname, $mode, $recursive)) {
+            throw new Exception(sprintf(
+                'Failed to create a directory [%s]',
+                $pathname
+            ));
+        }
 
         return $pathname;
     }
