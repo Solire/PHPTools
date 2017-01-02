@@ -223,9 +223,7 @@ class Csv
              * On récupère le header actuel du csv
              */
             $header = fgetcsv($this->handle, 0, $this->separator, $this->container);
-            foreach ($header as &$value) {
-                $value = preg_replace('#[^a-z0-9]+#i', '_', $value);
-            }
+
             if ($header !== false) {
                 $this->parseHeader($header);
             }
@@ -524,6 +522,10 @@ class Csv
             /** Constitution de la ligne */
             $this->line = new stdClass ();
             foreach ($this->header as $i => $header) {
+
+                if (empty($header)) {
+                   continue;
+                }
 
                 switch ($headerType) {
                     case 'string' :
